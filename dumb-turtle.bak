@@ -1,1 +1,32 @@
 #lang racket
+(require readline "structures.rkt" "synonyms.rkt" "simplify.rkt" "patterns.rkt" "variables.rkt")
+
+(define (start)
+  (read-one
+   DEFAULT-STATE))
+
+;; Takes the input and gives an answer
+;;e is an experience
+(define (read-one m)
+  (define r (read-line))
+  (define p (read-pattern m r))
+  (define s-list (simplify-grammar r));;list preserves case unless there is a contraction
+  (define s (string-foldcase (make-sentence s-list)));;makes it all lowercase
+  (cond
+    ;;here would be the learned things, with higher priority
+    [p
+     (read-one p)]
+    [(synonyms? "hello" s)
+     (writeln "howdy")
+     (read-one m)]
+    [(synonyms? "thank you" s)
+     (writeln "no problem");;later make UDC
+     (read-one m)]
+    [(synonyms? "current-state" s)
+     (println m)
+     (read-one m)]
+    [else
+     (writeln "idk")
+     (read-one m)]))
+
+(start)

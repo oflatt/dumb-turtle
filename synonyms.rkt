@@ -6,12 +6,19 @@
 (define SYNONYMS
   (list
    (synonym "hello" (list "hey" "howdy" "greetings"))
-   (synonym "thank you" (list "you are the best" "cool" "awesome" "awesome" "that is awesome" "that is cool"))))
+   (synonym "thank you" (list "you are the best" "cool" "awesome" "awesome" "that is awesome" "that is cool" "thx"))))
 
 ;;the synonym name and the input
+;;string, string -> boolean
 (define (synonyms? n i)
-  (this-synonym? (find-synonyms n SYNONYMS) i))
+  (define s (find-synonyms n SYNONYMS))
+  (cond
+    [s
+     (this-synonym? s i)]
+    [else
+     (equal? n i)]))
 
+;;bool or synonym, and a string -> boolean
 (define (this-synonym? s i)
   (cond
     [(equal? (synonym-name s) i)
@@ -34,7 +41,7 @@
 (define (find-synonyms s l)
   (cond
     [(empty? l)
-     (error 'synonyms? (string-append s " is not in synonym database"))]
+     false];(error 'synonyms? (string-append s " is not in synonym database"))] this is if I want everything to be in the database
     [(equal? s (synonym-name (first l)))
      (first l)]
     [else

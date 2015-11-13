@@ -1,25 +1,24 @@
 #lang racket
 (require rackunit)
-(provide simplify-grammar make-sentence)
+(provide simplify-grammar make-sentence list-of-words*)
 
 ;;takes a string and removes some contractions and punctuation
 ;;string->list of strings
 (define (simplify-grammar s)
-  (map simplify-word (list-of-words s)))
+  (apply append (map simplify-word (list-of-words s))))
 
 (module+ test
   (check-equal? (simplify-grammar "there's")
-                "there is")
-  {check-equal? (simplify-grammar "there's a pony down yonder, thank's!")
-                "there is a pony down yonder, thank you"})
+                (list "there" "is"))
+  (check-equal? (simplify-grammar "there's a pony down yonder, thank's!")
+                (list "there" "is" "a" "pony" "down" "yonder," "thank" "you")))
 
 ;;list of list pairs with words to simplify, corrections/simplifications on the right
 (define SIMPLIFY-WORD-PAIRS
   (list
-   (list "that's" "that is")
-   (list "there's" "there is")
-   (list "thx" "thank you")
-   (list "thank's" "thank you")))
+   (list "thats" (list "that" "is"))
+   (list "theres" {list "there" "is"})
+   (list "thanks" (list "thank" "you"))))
 
 ;;tries to simplify any word, takes out contractions, correct spelling or abbreviations
 ;;string -> string
@@ -28,15 +27,15 @@
 
 (module+ test
   (check-equal? (simplify-word "thank's")
-        "thank you")
+        (list "thank" "you"))
   (check-equal? (simplify-word "that's")
-        "that is"))
+        (list "that" "is")))
 
-;;list of pairs, string -> string
+;;list of pairs, string -> list of string(s)
 (define (simplify-word-helper p s)
   (cond
-    [(empty? p) s]
-    [(equal? (first (first p)) s)
+    [(empty? p) (list s)]
+    [(equal? (first (first p)) (regexp-replace* #rx"[^a-z]" (string-foldcase s) ""));;fixmed
      (second (first p))]
     [else
      (simplify-word-helper (rest p) s)]))
@@ -52,8 +51,8 @@
      (string-append (first l) " " (make-sentence (rest l)))]))
 
 (module+ test
-  (check-equal? (make-sentence (list "there" "is" "a" "pig" "in" "my" "soup"))
-                "there is a pig in my soup")
+  (check-equal? (make-sentence (list "there" "is" "a" "pig!" "in" "my" "soup!"))
+                "there is a pig! in my soup!")
   (check-equal? (make-sentence (list "oliver," "you" "are" "the" "best" "programmer"))
                 "oliver, you are the best programmer"))
 
@@ -69,6 +68,27 @@
                 (list "yes,"))
   (check-equal? (punctuation? (substring "!adklsf" 0 1))
                 true))
+
+;;like list-of-words but just takes out spaces without filtering punctuation
+(define (list-of-words* s)
+  (list-of-words-helper* empty "" s))
+
+(module+ test
+  (check-equal?
+   (list-of-words* "ThanK's!")
+   (list "ThanK's!"))
+  (check-equal?
+   (list-of-words* "ThanK's!, That's totally awesOME")
+   (list "ThanK's!," "That's" "totally" "awesOME")))
+
+(define (list-of-words-helper* l nw s);;list accumulator, new word accumulator, and string
+  (cond
+    [(equal? (string-length s) 0)
+     (append l (list nw))]
+    [(equal? (substring s 0 1) " ")
+     (list-of-words-helper* (append l (list nw)) "" (substring s 1))]
+    [else
+     (list-of-words-helper* l (string-append nw (substring s 0 1)) (substring s 1))]))
 
 ;;accumulates the list, incomplete string, and the string yet to be added
 ;;list, string, string -> list of stings
